@@ -17,3 +17,6 @@ def read_root():
 app.include_router(document.router, prefix="/documents", tags=["Documents"])
 app.include_router(query.router, prefix="/query", tags=["Query"])
 app.include_router(retrieval.router, prefix="/retrieval", tags=["Retrieval"])
+
+
+
