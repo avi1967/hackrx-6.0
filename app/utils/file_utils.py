@@ -1,21 +1,24 @@
+import requests
 import fitz  # PyMuPDF
-import docx
+from pathlib import Path
+from tempfile import NamedTemporaryFile
+from fastapi import UploadFile
 
-def extract_pdf_text(content: bytes) -> str:
-    doc = fitz.open(stream=content, filetype="pdf")
-    return "\\n".join([page.get_text() for page in doc])
-
-def extract_docx_text(content: bytes) -> str:
-    from io import BytesIO
-    doc = docx.Document(BytesIO(content))
-    return "\\n".join([p.text for p in doc.paragraphs])
-
-def extract_email_text(content: bytes) -> str:
-    return content.decode(errors='ignore')
-
-# app/utils/file_utils.py
-
-async def process_file(file):
+async def process_file(file: UploadFile) -> str:
     content = await file.read()
-    text = content.decode("utf-8", errors="ignore")
+    return content.decode("utf-8", errors="ignore")
+
+def download_file(url: str) -> Path:
+    response = requests.get(url)
+    temp_file = NamedTemporaryFile(delete=False, suffix=".pdf")
+    temp_file.write(response.content)
+    temp_file.close()
+    return Path(temp_file.name)
+
+def extract_text_from_pdf(file_path: Path) -> str:
+    doc = fitz.open(str(file_path))
+    text = ""
+    for page in doc:
+        text += page.get_text()
     return text
+
