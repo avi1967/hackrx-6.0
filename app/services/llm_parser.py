@@ -1,22 +1,19 @@
+# app/services/llm_parser.py
 import openai
-from app.config import config
+import os
 
-openai.api_key = config.OPENAI_API_KEY
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-def parse_query_with_llm(user_query: str) -> dict:
-    system_prompt = "Extract the intent, entities, jurisdiction, and time range from this query. Return a JSON object."
+def generate_answer(question, context_chunks):
+    context = "\n".join(context_chunks)
+    prompt = f"Answer the following question based on the provided document:\n\n{context}\n\nQuestion: {question}"
     
-    completion = openai.ChatCompletion.create(
+    response = openai.ChatCompletion.create(
         model="gpt-4",
         messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_query}
-        ]
+            {"role": "system", "content": "You are a legal/insurance assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0
     )
-    return completion.choices[0].message['content']
-
-# app/services/llm_parser.py
-
-def parse_query(query):
-    # Dummy parser (replace with OpenAI/LLM logic)
-    return {"parsed_intent": "retrieve", "entities": ["invoice", "March 2023"]}
+    return response.choices[0].message["content"].strip()
