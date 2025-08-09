@@ -2,14 +2,27 @@
 
 from fastapi import APIRouter
 from pydantic import BaseModel
-from app.services.llm_parser import parse_query
+from app.services.embedding_engine import EmbeddingEngine
+from app.services.llm_parser import answer_with_context
 
 router = APIRouter()
 
-class QueryInput(BaseModel):
-    query: str
+embedding_engine = EmbeddingEngine()
 
-@router.post("/")
-def parse_user_query(data: QueryInput):
-    structured_query = parse_query(data.query)
-    return {"structured_query": structured_query}
+class QueryPayload(BaseModel):
+    question: str
+
+@router.post("/query")
+async def query_document(payload: QueryPayload):
+    # Retrieve similar clauses from FAISS
+    results = embedding_engine.search(payload.question, top_k=3)
+    
+    # Use LLM to produce answer
+    answer, reasoning = answer_with_context(payload.question, results)
+
+    return {
+        "question": payload.question,
+        "answer": answer,
+        "evidence": results,
+        "reasoning": reasoning
+    }
